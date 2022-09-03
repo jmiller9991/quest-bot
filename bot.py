@@ -101,3 +101,56 @@ async def on_guild_remove(guild):
 
     cursor.close()
     db.close()
+
+########################################################################################################################
+#   COMMANDS                                                                                                           #
+########################################################################################################################
+
+########################################################################################################################
+#   TEST COMMANDS                                                                                                      #
+########################################################################################################################
+
+@client.command(aliases=['hi_world', 'hw', 'hello'])
+async def hello_world(ctx):
+    await ctx.send('Hello World! I am a bot!')
+
+@client.command(aliases=['dcvers', 'codevers', 'apivers'])
+async def discord_api_vers(ctx):
+    await ctx.send(f'API Version: {discord.__version__}')
+
+@client.command(aliases=['link', 'link_test', 'linktesting'])
+async def send_link(ctx):
+    await ctx.send('https://www.youtube.com/watch?v=Z7VNyregOtA')
+
+@client.command(aliases=['test', 'test_embed', 'embed'])
+async def embed_test(ctx):
+    embed = discord.Embed(title='Test Embed',
+                          description='This is a test embed example',
+                          color=0x197d64)
+    await ctx.send(embed=embed)
+
+
+########################################################################################################################
+#   Setup/Administrative Commands                                                                                      #
+########################################################################################################################
+@client.command()
+@commands.has_guild_permissions(administrator=True)
+async def changeprefix(ctx, prefix):
+    with open('prefixes.json', 'r') as f:
+        prefixes = json.load(f)
+
+    prefixes[str(ctx.guild.id)] = prefix
+
+    with open('prefixes.json', 'w') as f:
+        json.dump(prefixes, f, indent=4)
+
+    await ctx.send(f'```Prefix changed to {prefix}```')
+
+#ERROR HANDLERS for prefix command
+@changeprefix.error
+async def prefixerror(ctx, error):
+    if isinstance(error, commands.MissingRequiredArgument):
+        await ctx.send('The command is missing the correct arguments.\n```changeprefix [prefix]```')
+    else:
+        await ctx.send('An error has occurred!')
+
