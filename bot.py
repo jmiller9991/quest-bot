@@ -249,4 +249,45 @@ async def prefixerror(ctx, error):
 @client.command(aliases=['cq'])
 @commands.has_guild_permissions(administrator=True)
 async def create_quest(ctx, title, desc, author_name, author_image, reward_type, quest_accepted_date, quest_image, quest_challenge):
-    await ctx.send('Error')
+    db = sqlite3.connect('main.sqlite')
+    cursor = db.cursor()
+
+    cursor.execute(f'SELECT quest_title FROM quest_list WHERE guild_id = {ctx.guild.id} AND quest_title = {title}')
+    result = cursor.fetchone()
+
+    if result is None:
+        quest_title = title
+    else:
+        await ctx.send(f'{title} matches a provided title. Failing...')
+        return
+
+    quest_desc = desc
+    quest_author = author_name
+    quest_author_image = author_image
+    quest_reward_type = reward_type
+    quest_date = quest_accepted_date
+    quest_img = quest_image
+
+    if (quest_challenge is not 'none' or quest_challenge is not 'very easy' or quest_challenge is not 'easy'
+            or quest_challenge is not 'medium' or quest_challenge is not 'hard' or quest_challenge is not 'deadly'):
+        challenge = quest_challenge
+    else:
+        await ctx.send(f'{quest_challenge} is not an acceptable challenge level. Failing...')
+        return
+
+    cursor.execute(f'SELECT COUNT(quest_number) FROM quest_list WHERE guild_id = {ctx.guild.id}')
+    result2 = cursor.fetchone()
+
+    if result2 is None:
+        quest_number = 0
+    else:
+        quest_number = result2[0] + 1
+
+    vals = (ctx.guild.id, quest_number, quest_title, quest_desc, quest_author, quest_author_image, quest_reward_type, quest_date, quest_img, challenge, 'in progress')
+    sql = (f'INSERT INTO quest_list(guild_id, quest_number, quest_title, quest_description, author_name, author_image, reward_type, quest_accepted_date, quest_image, quest_challenge, quest_status) VALUES(?,?,?,?,?,?,?,?,?,?,?)')
+
+    cursor.execute(sql, vals)
+    db.commit()
+    cursor.close()
+    db.close()
+
