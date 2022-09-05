@@ -359,7 +359,7 @@ async def edit_quest(ctx, quest_title, field_to_change, value):
         await ctx.send(f'{field_to_change} is not acceptable, failing...')
         return
 
-    cursor.execute(f'UPDATE quest_list SET {field_to_change} = {value} WHERE guild_id = {ctx.guild.id} AND quest_title = {quest_title}')
+    cursor.execute(f'UPDATE quest_list SET {field} = {value} WHERE guild_id = {ctx.guild.id} AND quest_title = {quest_title}')
 
     db.commit()
 
@@ -376,13 +376,50 @@ async def view_quest(ctx, quest_title):
     db = sqlite3.connect('main.sqlite')
     cursor = db.cursor()
 
+    #                        0               1                   2           3              4               5                  6            7               8
     cursor.execute(f'SELECT quest_title, quest_description, author_name, author_image, reward_type, quest_accepted_date, quest_image, quest_challenge, quest_status FROM quest_list WHERE guild_id = {ctx.guild.id} AND quest_title = {quest_title}')
     result = cursor.fetchone()
 
     if result is None:
         await ctx.send('This quest does not exist, failing...')
         return
-    else:
-        print('p')
 
-    await ctx.send('Ahhhhhh')
+    if result[7] == 'none':
+        color1 = 0xB4B4B4
+    elif result[7] == 'very easy':
+        color1 = 0x30E200
+    elif result[7] == 'easy':
+        color1 = 0x156300
+    elif result[7] == 'medium':
+        color1 = 0xDFA300
+    elif result[7] == 'hard':
+        color1 = 0xFF0000
+    elif result[7] == 'deadly':
+        color1 = 0x6E0000
+    else:
+        color1 = 0xFFFFFF
+
+    embed = discord.Embed(title=result[0],
+                          description=result[1],
+                          color=color1)
+
+    if result[3].casefold() == 'none':
+        embed.set_author(name=result[2])
+    elif result[3].casefold() == 'default':
+        file = discord.File("anonauthor.png")
+        embed.set_author(name=result[2], icon_url="attachment://anonauthor.png")
+    else:
+        embed.set_author(name=result[2], icon_url=result[3])
+
+    embed.add_field(name='Reward', value=result[4], inline=True)
+    embed.add_field(name='Quest Accepted Date', value=result[5], inline=True)
+
+    if result[6].casefold() is not 'none':
+        embed.set_image(url=result[6])
+    elif result[6].casefold() == 'default':
+        file2 = discord.File("defaultimg.png")
+        embed.set_image(url="attachment://defaultimg.png")
+
+    embed.set_footer(text=result[8])
+
+    await ctx.send(embed=embed)
