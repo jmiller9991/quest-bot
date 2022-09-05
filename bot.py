@@ -127,6 +127,9 @@ async def embed_test(ctx):
     embed = discord.Embed(title='Test Embed',
                           description='This is a test embed example',
                           color=0x197d64)
+
+    embed.set_author(name=ctx.author.display_name, icon_url=ctx.author.avatar_url)
+
     await ctx.send(embed=embed)
 
 @client.command(aliases=['h'])
@@ -141,6 +144,7 @@ async def help(ctx, command=None):
             - view_quest (alias vq)
             - quest_list (alias ql)
             - delete_quest (alias dq)
+            - quest_status (alias qs)
             
         Type help <command> for the usage of the command
         ```
@@ -174,10 +178,12 @@ async def help(ctx, command=None):
     elif (command == 'edit_quest' or command == 'eq'):
         await ctx.send('''
         ```
-        edit_quest field_to_change value
+        edit_quest quest_title field_to_change value
         where all things that are more than one word must be surrounded in quotes
         
         This will change the field you enter in the command to the value you enter in the command. The field's are described below.
+        
+        quest_title is the quest you want to change a value of
         
         field_to_change is the thing you want to change in the quest and value is the value that you are changing it too - this must be one of the phrases listed below, and value restrictions are included
             - title => quest title - cannot share the same title with another existing quest
@@ -214,6 +220,16 @@ async def help(ctx, command=None):
         where all things that are more than one word must be surrounded in quotes
         
         quest_title is the title of the quest you want to delete
+        ```
+        ''')
+    elif (command == 'quest_status' or command == 'qs'):
+        await ctx.send('''
+        ```
+        quest_status quest_title status 
+        where all things that are more than one word must be surrounded in quotes
+        
+        quest_title is the title of the quest you want to change the status of
+        status is the status you are going to change the quest to - these can be in progress, complete, or failed
         ```
         ''')
 
@@ -288,6 +304,85 @@ async def create_quest(ctx, title, desc, author_name, author_image, reward_type,
 
     cursor.execute(sql, vals)
     db.commit()
+
+    prefix = get_prefix(client, ctx.message)
+
+    await ctx.send(f'Quest Created. Do {prefix}view_quest {quest_title} to view this quest.')
+
     cursor.close()
     db.close()
 
+#edits a quest
+@client.command(aliases=['eq'])
+@commands.has_guild_permissions(administrator=True)
+async def edit_quest(ctx, quest_title, field_to_change, value):
+    db = sqlite3.connect('main.sqlite')
+    cursor = db.cursor()
+
+    cursor.execute(f'SELECT quest_title FROM quest_list WHERE guild_id = {ctx.guild.id} AND quest_title = {quest_title}')
+    result = cursor.fetchone()
+
+    if result is None:
+        await ctx.send('This quest does not exist, failing...')
+        return
+
+    if field_to_change == 'title':
+
+        cursor.execute(f'SELECT quest_title FROM quest_list WHERE guild_id = {ctx.guild.id} AND quest_title = {value}')
+        result2 = cursor.fetchone()
+
+        if result2 is not None:
+            await ctx.send(f'{value} is already a quest name, failing...')
+            return
+        else:
+            field = 'quest_title'
+
+    elif field_to_change == 'description':
+        field = 'quest_description'
+    elif field_to_change == 'author_name':
+        field = 'author_name'
+    elif field_to_change == 'author_image_link':
+        field = 'author_image'
+    elif field_to_change == 'reward_type':
+        field = 'reward_type'
+    elif field_to_change == 'quest_accepted_date':
+        field = 'quest_accepted_date'
+    elif field_to_change == 'quest_image_link':
+        field = 'quest_image'
+    elif field_to_change == 'quest_challenge':
+        if (value == 'none' or value == 'very easy' or value == 'easy' or value == 'medium' or value == 'hard' or value == 'deadly'):
+            field = 'quest_challenge'
+        else:
+            await ctx.send(f'{value} is not acceptable for \"quest_challenge\" field, failing...')
+            return
+    else:
+        await ctx.send(f'{field_to_change} is not acceptable, failing...')
+        return
+
+    cursor.execute(f'UPDATE quest_list SET {field_to_change} = {value} WHERE guild_id = {ctx.guild.id} AND quest_title = {quest_title}')
+
+    db.commit()
+
+    prefix = get_prefix(client, ctx.message)
+
+    await ctx.send(f'Quest updated. Do {prefix}view_quest {quest_title} to view this quest.')
+
+    cursor.close()
+    db.close()
+
+# view a quest
+@client.commands(aliases=['vq'])
+async def view_quest(ctx, quest_title):
+    db = sqlite3.connect('main.sqlite')
+    cursor = db.cursor()
+
+    cursor.execute(f'SELECT quest_title, quest_description, author_name, author_image, reward_type, quest_accepted_date, quest_image, quest_challenge, quest_status FROM quest_list WHERE guild_id = {ctx.guild.id} AND quest_title = {quest_title}')
+    result = cursor.fetchone()
+
+    if result is None:
+        await ctx.send('This quest does not exist, failing...')
+        return
+    else:
+        print('p')
+
+    await ctx.send('Ahhhhhh')
