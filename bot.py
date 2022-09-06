@@ -312,6 +312,14 @@ async def create_quest(ctx, title, desc, author_name, author_image, reward_type,
     cursor.close()
     db.close()
 
+@create_quest.error
+async def cqerror(ctx, error):
+    if isinstance(error, commands.MissingRequiredArgument):
+        await ctx.send(f'The command is missing the correct arguments.\n```{get_prefix(client, ctx.message)}create_quest [title] [description] [author_name] [author_image_link] [reward_type] [quest_accepted_date] [quest_image_link] [quest_challenge]```')
+    else:
+        await ctx.send('An error has occurred!')
+
+
 #edits a quest
 @client.command(aliases=['eq'])
 @commands.has_guild_permissions(administrator=True)
@@ -369,6 +377,12 @@ async def edit_quest(ctx, quest_title, field_to_change, value):
 
     cursor.close()
     db.close()
+@edit_quest.error
+async def eqerror(ctx, error):
+    if isinstance(error, commands.MissingRequiredArgument):
+        await ctx.send(f'The command is missing the correct arguments.\n```{get_prefix(client, ctx.message)}edit_quest [quest_title] [field_to_change] [value]``')
+    else:
+        await ctx.send('An error has occurred!')
 
 # view a quest
 @client.commands(aliases=['vq'])
@@ -423,3 +437,47 @@ async def view_quest(ctx, quest_title):
     embed.set_footer(text=result[8])
 
     await ctx.send(embed=embed)
+
+    cursor.close()
+    db.close()
+@view_quest.error
+async def vqerror(ctx, error):
+    if isinstance(error, commands.MissingRequiredArgument):
+        await ctx.send(f'The command is missing the correct arguments.\n```{get_prefix(client, ctx.message)}view_quest [quest_title]``')
+    else:
+        await ctx.send('An error has occurred!')
+
+@client.commands(aliases=['ql'])
+async def quest_list(ctx):
+    db = sqlite3.connect('main.sqlite')
+    cursor = db.cursor()
+
+    complete = []
+    in_progress = []
+    failed = []
+
+    for row in cursor.execute(f'SELECT quest_title, quest_status FROM quest_list WHERE guild_id = {ctx.guild.id}'):
+        if row[1].casefold() == 'in progress':
+            in_progress.append(row[0])
+        elif row[1].casefold() == 'complete':
+            complete.append(row[0])
+        elif row[1].casefold() == 'failed':
+            failed.append(row[0])
+        else:
+            print('error with information')
+
+    await ctx.send('--QUEST IN PROGRESS--')
+    for x in in_progress:
+        await ctx.send(x)
+
+    await ctx.send('--QUEST COMPLETE--')
+    for x in complete:
+        await ctx.send(x)
+
+    await ctx.send('--QUEST FAILED--')
+    for x in failed:
+        await ctx.send(x)
+
+    cursor.close()
+    db.close()
+
