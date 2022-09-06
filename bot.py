@@ -284,8 +284,8 @@ async def create_quest(ctx, title, desc, author_name, author_image, reward_type,
     quest_date = quest_accepted_date
     quest_img = quest_image
 
-    if (quest_challenge is not 'none' or quest_challenge is not 'very easy' or quest_challenge is not 'easy'
-            or quest_challenge is not 'medium' or quest_challenge is not 'hard' or quest_challenge is not 'deadly'):
+    if (quest_challenge is 'none' or quest_challenge is 'very easy' or quest_challenge is 'easy'
+            or quest_challenge is 'medium' or quest_challenge is 'hard' or quest_challenge is 'deadly'):
         challenge = quest_challenge
     else:
         await ctx.send(f'{quest_challenge} is not an acceptable challenge level. Failing...')
@@ -334,7 +334,7 @@ async def edit_quest(ctx, quest_title, field_to_change, value):
         await ctx.send('This quest does not exist, failing...')
         return
 
-    if field_to_change == 'title':
+    if field_to_change is 'title':
 
         cursor.execute(f'SELECT quest_title FROM quest_list WHERE guild_id = {ctx.guild.id} AND quest_title = {value}')
         result2 = cursor.fetchone()
@@ -345,20 +345,20 @@ async def edit_quest(ctx, quest_title, field_to_change, value):
         else:
             field = 'quest_title'
 
-    elif field_to_change == 'description':
+    elif field_to_change is 'description':
         field = 'quest_description'
-    elif field_to_change == 'author_name':
+    elif field_to_change is 'author_name':
         field = 'author_name'
-    elif field_to_change == 'author_image_link':
+    elif field_to_change is 'author_image_link':
         field = 'author_image'
-    elif field_to_change == 'reward_type':
+    elif field_to_change is 'reward_type':
         field = 'reward_type'
-    elif field_to_change == 'quest_accepted_date':
+    elif field_to_change is 'quest_accepted_date':
         field = 'quest_accepted_date'
-    elif field_to_change == 'quest_image_link':
+    elif field_to_change is 'quest_image_link':
         field = 'quest_image'
-    elif field_to_change == 'quest_challenge':
-        if (value == 'none' or value == 'very easy' or value == 'easy' or value == 'medium' or value == 'hard' or value == 'deadly'):
+    elif field_to_change is 'quest_challenge':
+        if (value is 'none' or value is 'very easy' or value is 'easy' or value is 'medium' or value is 'hard' or value is 'deadly'):
             field = 'quest_challenge'
         else:
             await ctx.send(f'{value} is not acceptable for \"quest_challenge\" field, failing...')
@@ -398,17 +398,17 @@ async def view_quest(ctx, quest_title):
         await ctx.send('This quest does not exist, failing...')
         return
 
-    if result[7] == 'none':
+    if result[7] is 'none':
         color1 = 0xB4B4B4
-    elif result[7] == 'very easy':
+    elif result[7] is 'very easy':
         color1 = 0x30E200
-    elif result[7] == 'easy':
+    elif result[7] is 'easy':
         color1 = 0x156300
-    elif result[7] == 'medium':
+    elif result[7] is 'medium':
         color1 = 0xDFA300
-    elif result[7] == 'hard':
+    elif result[7] is 'hard':
         color1 = 0xFF0000
-    elif result[7] == 'deadly':
+    elif result[7] is 'deadly':
         color1 = 0x6E0000
     else:
         color1 = 0xFFFFFF
@@ -417,9 +417,9 @@ async def view_quest(ctx, quest_title):
                           description=result[1],
                           color=color1)
 
-    if result[3].casefold() == 'none':
+    if result[3].casefold() is 'none':
         embed.set_author(name=result[2])
-    elif result[3].casefold() == 'default':
+    elif result[3].casefold() is 'default':
         file = discord.File("anonauthor.png")
         embed.set_author(name=result[2], icon_url="attachment://anonauthor.png")
     else:
@@ -430,7 +430,7 @@ async def view_quest(ctx, quest_title):
 
     if result[6].casefold() is not 'none':
         embed.set_image(url=result[6])
-    elif result[6].casefold() == 'default':
+    elif result[6].casefold() is 'default':
         file2 = discord.File("defaultimg.png")
         embed.set_image(url="attachment://defaultimg.png")
 
@@ -457,11 +457,11 @@ async def quest_list(ctx):
     failed = []
 
     for row in cursor.execute(f'SELECT quest_title, quest_status FROM quest_list WHERE guild_id = {ctx.guild.id}'):
-        if row[1].casefold() == 'in progress':
+        if row[1].casefold() is 'in progress':
             in_progress.append(row[0])
-        elif row[1].casefold() == 'complete':
+        elif row[1].casefold() is 'complete':
             complete.append(row[0])
-        elif row[1].casefold() == 'failed':
+        elif row[1].casefold() is 'failed':
             failed.append(row[0])
         else:
             print('error with information')
@@ -480,4 +480,62 @@ async def quest_list(ctx):
 
     cursor.close()
     db.close()
+
+@client.commands(aliases=['dq'])
+@commands.has_guild_permissions(administrator=True)
+async def delete_quest(ctx, quest_title):
+    db = sqlite3.connect('main.sqlite')
+    cursor = db.cursor()
+
+    cursor.execute(f'SELECT quest_title FROM quest_list WHERE guild_id = {ctx.guild.id} AND quest_title = {quest_title}')
+    result = cursor.fetchone()
+
+    if result is None:
+        await ctx.send('This quest does not exist, failing...')
+        return
+
+    cursor.execute(f'DELETE FROM quest_list WHERE guild_id = {ctx.guild.id} AND quest_title={quest_title}')
+
+    db.commit()
+    cursor.close()
+    db.close()
+@delete_quest.error
+async def dqerror(ctx, error):
+    if isinstance(error, commands.MissingRequiredArgument):
+        await ctx.send(f'The command is missing the correct arguments.\n```{get_prefix(client, ctx.message)}delete_quest [quest_title]``')
+    else:
+        await ctx.send('An error has occurred!')
+
+@client.commands(aliases=['qs'])
+@commands.has_guild_permissions(administrator=True)
+async def quest_status(ctx, quest_title, status):
+    db = sqlite3.connect('main.sqlite')
+    cursor = db.cursor()
+
+    cursor.execute(f'SELECT quest_title FROM quest_list WHERE guild_id = {ctx.guild.id} AND quest_title = {quest_title}')
+    result = cursor.fetchone()
+
+    if result is None:
+        await ctx.send('This quest does not exist, failing...')
+        return
+
+    if (status is 'in progress' or status is 'complete' or status is 'failed'):
+        sql = ('UPDATE quest_list SET quest_status = ? WHERE guild_id = ? AND quest_title = ?')
+        vals = (status, ctx.guild.id, quest_title)
+
+        cursor.execute(sql, vals)
+    else:
+        await ctx.send(f'{status} is not accepted. Failing...')
+        return
+
+    db.commit()
+    cursor.close()
+    db.close()
+@quest_status.error
+async def qserror(ctx, error):
+    if isinstance(error, commands.MissingRequiredArgument):
+        await ctx.send(f'The command is missing the correct arguments.\n```{get_prefix(client, ctx.message)}quest_status [quest_title] [status]``')
+    else:
+        await ctx.send('An error has occurred!')
+
 
