@@ -466,15 +466,15 @@ async def quest_list(ctx):
         else:
             print('error with information')
 
-    await ctx.send('--QUEST IN PROGRESS--')
+    await ctx.send('**--QUEST IN PROGRESS--**')
     for x in in_progress:
         await ctx.send(x)
 
-    await ctx.send('--QUEST COMPLETE--')
+    await ctx.send('**--QUEST COMPLETE--**')
     for x in complete:
         await ctx.send(x)
 
-    await ctx.send('--QUEST FAILED--')
+    await ctx.send('**--QUEST FAILED--**')
     for x in failed:
         await ctx.send(x)
 
@@ -538,4 +538,142 @@ async def qserror(ctx, error):
     else:
         await ctx.send('An error has occurred!')
 
+@client.commands(aliases=['qs'])
+@commands.has_guild_permissions(administrator=True)
+async def quest_builder(ctx):
+    db = sqlite3.connect('main.sqlite')
+    cursor = db.cursor()
 
+    def check(amsg):
+        return amsg.author == ctx.author and amsg.channel == ctx.channel
+
+    await ctx.send('''
+    ```
+    This is the quest builder. This will give you a step-by-step guide on building a quest.
+    
+    Let's first start with giving your quest a title. This title cannot match any quest titles that exist on the database. This includes complete and failed quest.
+    ```
+    ''')
+
+    wait1 = True
+
+    while(wait1):
+        title = await client.wait_for("message", check=check)
+
+        cursor.execute(
+            f'SELECT quest_title FROM quest_list WHERE guild_id = {ctx.guild.id} AND quest_title = {title}')
+        result = cursor.fetchone()
+
+        if result is not None:
+            await ctx.send('This quest does exist. Try again!')
+            wait1 = True
+        else:
+            wait1 = False
+
+    await ctx.send('''
+    ```
+    Good! Now let's get the description of the quest. 
+    ```
+    ''')
+
+    desc = await client.wait_for("message", check=check)
+
+    await ctx.send('''
+    ```
+    Good! Let's give the quest an author. This is the quest giver.
+    ``` 
+    ''')
+
+    auth_name = await client.wait_for("message", check=check)
+
+    await ctx.send('''
+    ```
+    Let's pick an image for the quest giver. If you do not want an image, write \"none\" exactly as written here. If you want to use a default image, type \"default\" exactly as written here.
+    ``` 
+    ''')
+
+    auth_img = await client.wait_for("message", check=check)
+
+    if (auth_img.casefold() is 'none'):
+        author_image = 'none'
+    elif (auth_img.casefold() is 'default'):
+        author_image = 'default'
+    else:
+        author_image = auth_img
+
+    await ctx.send('''
+    ```
+    Now, let's provide the reward. This can be anything you want it to be.
+    ```
+    ''')
+
+    reward = await client.wait_for("message", check=check)
+
+    await ctx.send('''
+    ```
+    Good job! Now, let's set the date the players accepted the quest. This can be today's date, the in-game date, etc.
+    ```
+    ''')
+
+    quest_date = await client.wait_for("message", check=check)
+
+    await ctx.send('''
+    ```
+    Great! Now, let's set the quest image. If you do not want an image, write \"none\" exactly as written here. If you want to use a default image, type \"default\" exactly as written here.
+    ```
+    ''')
+
+    quest_img = await client.wait_for("message", check=check)
+
+    if (quest_img.casefold() is 'none'):
+        quest_image = 'none'
+    elif (quest_img.casefold() is 'default'):
+        quest_image = 'default'
+    else:
+        quest_image = quest_img
+
+    await ctx.send('''
+    ```
+    Great job! Now, let's set the quest challenge level. This can only be \"none\", \"very easy\", \"easy\", \"medium\", \"hard\", or \"deadly\"
+    ```
+    ''')
+
+    wait2 = True
+    while(wait2):
+        chal = await client.wait_for("message", check=check)
+
+        if (chal is 'none' or chal is 'very easy' or chal is 'easy' or chal is 'medium' or chal is 'hard' or chal is 'deadly'):
+            challenge = chal
+            wait2 = False
+        else:
+            await ctx.send('This is not correct! Try again!')
+            wait2 = True
+
+    cursor.execute(f'SELECT COUNT(quest_number) FROM quest_list WHERE guild_id = {ctx.guild.id}')
+    result2 = cursor.fetchone()
+
+    if result2 is None:
+        quest_number = 0
+    else:
+        quest_number = result2[0] + 1
+
+    vals = (ctx.guild.id, quest_number, title, desc, auth_name, author_image, reward,
+            quest_date, quest_image, challenge, 'in progress')
+    sql = (
+        f'INSERT INTO quest_list(guild_id, quest_number, quest_title, quest_description, author_name, author_image, reward_type, quest_accepted_date, quest_image, quest_challenge, quest_status) VALUES(?,?,?,?,?,?,?,?,?,?,?)')
+
+    cursor.execute(sql, vals)
+
+    db.commit()
+    prefix = get_prefix(client, ctx.message)
+
+    await ctx.send(f'**Congratulations!** The quest has been created. Type {prefix}view_quest {title} to view this quest.')
+
+    cursor.close()
+    db.close()
+
+########################################################################################################################
+#   OTHER IMPORTANT CODE                                                                                               #
+########################################################################################################################
+
+client.run('Key Here')
