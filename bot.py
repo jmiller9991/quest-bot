@@ -676,4 +676,4 @@ async def quest_builder(ctx):
 #   OTHER IMPORTANT CODE                                                                                               #
 ########################################################################################################################
 
-client.run('MTAxNTQ4Mzg0NjIxNDU3MDA1NQ.GzjD-G.AsB_p_U0J-xEFGXZ7xTPNCdQpCiV_x323dun6A')
+client.run('TOKEN')
