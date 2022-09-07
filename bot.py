@@ -385,7 +385,7 @@ async def eqerror(ctx, error):
         await ctx.send('An error has occurred!')
 
 # view a quest
-@client.commands(aliases=['vq'])
+@client.command(aliases=['vq'])
 async def view_quest(ctx, quest_title):
     db = sqlite3.connect('main.sqlite')
     cursor = db.cursor()
@@ -447,7 +447,7 @@ async def vqerror(ctx, error):
     else:
         await ctx.send('An error has occurred!')
 
-@client.commands(aliases=['ql'])
+@client.command(aliases=['ql'])
 async def quest_list(ctx):
     db = sqlite3.connect('main.sqlite')
     cursor = db.cursor()
@@ -481,7 +481,7 @@ async def quest_list(ctx):
     cursor.close()
     db.close()
 
-@client.commands(aliases=['dq'])
+@client.command(aliases=['dq'])
 @commands.has_guild_permissions(administrator=True)
 async def delete_quest(ctx, quest_title):
     db = sqlite3.connect('main.sqlite')
@@ -506,7 +506,7 @@ async def dqerror(ctx, error):
     else:
         await ctx.send('An error has occurred!')
 
-@client.commands(aliases=['qs'])
+@client.command(aliases=['qs'])
 @commands.has_guild_permissions(administrator=True)
 async def quest_status(ctx, quest_title, status):
     db = sqlite3.connect('main.sqlite')
@@ -538,7 +538,7 @@ async def qserror(ctx, error):
     else:
         await ctx.send('An error has occurred!')
 
-@client.commands(aliases=['qs'])
+@client.command(aliases=['qb'])
 @commands.has_guild_permissions(administrator=True)
 async def quest_builder(ctx):
     db = sqlite3.connect('main.sqlite')
@@ -676,4 +676,4 @@ async def quest_builder(ctx):
 #   OTHER IMPORTANT CODE                                                                                               #
 ########################################################################################################################
 
-client.run('Key Here')
+client.run('TOKEN')
