@@ -2,6 +2,7 @@ import os
 import discord
 import json
 from discord.ext import commands
+from discord_slash import SlashCommand
 import sqlite3
 import asyncio
 
@@ -13,9 +14,10 @@ async def get_prefix(client, message):
 
     return prefixes[str(message.guild.id)]
 
-client = commands.Bot(command_prefix=get_prefix)
+client = commands.Bot(command_prefix=(get_prefix))
 
 client.remove_command('help')
+slash = SlashCommand(client, sync_commands=True)
 ########################################################################################################################
 #   EVENTS                                                                                                             #
 ########################################################################################################################
@@ -109,20 +111,19 @@ async def on_guild_remove(guild):
 ########################################################################################################################
 #   TEST COMMANDS                                                                                                      #
 ########################################################################################################################
-
-@client.command(aliases=['hi_world', 'hw', 'hello'])
+@slash.slash(name='hello_world', description="Hello World Command")
 async def hello_world(ctx):
     await ctx.send('Hello World! I am a bot!')
 
-@client.command(aliases=['dcvers', 'codevers', 'apivers'])
+@slash.slash(name='discord_api_vers', description='Show API Version')
 async def discord_api_vers(ctx):
     await ctx.send(f'API Version: {discord.__version__}')
 
-@client.command(aliases=['link', 'link_test', 'linktesting'])
+@slash.slash(name='send_link', description='link test')
 async def send_link(ctx):
     await ctx.send('https://www.youtube.com/watch?v=Z7VNyregOtA')
 
-@client.command(aliases=['test', 'test_embed', 'embed'])
+@slash.slash(name='embed_test', description='embed testing')
 async def embed_test(ctx):
     embed = discord.Embed(title='Test Embed',
                           description='This is a test embed example',
@@ -132,24 +133,24 @@ async def embed_test(ctx):
 
     await ctx.send(embed=embed)
 
-@client.command(aliases=['h'])
+@slash.slash(name='help', description="This will show help, you can include the string for each command")
 async def help(ctx, command=None):
-    if command == None:
+    if command is None:
         await ctx.send('''
         ```
         Command List:
-            - create_quest (alias cq)
-            - quest_builder (alias qb)
-            - edit_quest (alias eq)
-            - view_quest (alias vq)
-            - quest_list (alias ql)
-            - delete_quest (alias dq)
-            - quest_status (alias qs)
+            - create_quest
+            - quest_builder
+            - edit_quest
+            - view_quest
+            - quest_list
+            - delete_quest
+            - quest_status
             
         Type help <command> for the usage of the command
         ```
         ''')
-    elif (command == 'create_quest' or command == 'cq'):
+    elif (command == 'create_quest'):
         await ctx.send('''
         ```
         create_quest title description author_name author_image_link reward_type quest_accepted_date quest_image_link quest_challenge
@@ -167,7 +168,7 @@ async def help(ctx, command=None):
         quest_challenge is the challenge level of the quest - this can only be \"none\", \"very easy\", \"easy\", \"medium\", \"hard\", or \"deadly\"
         ```
         ''')
-    elif (command == 'quest_builder' or command == 'qb'):
+    elif (command == 'quest_builder'):
         await ctx.send('''
         ```
         quest_builder
@@ -175,7 +176,7 @@ async def help(ctx, command=None):
         This will provide you a step-by-step guide to build a quest.
         ```
         ''')
-    elif (command == 'edit_quest' or command == 'eq'):
+    elif (command == 'edit_quest'):
         await ctx.send('''
         ```
         edit_quest quest_title field_to_change value
@@ -196,7 +197,7 @@ async def help(ctx, command=None):
             - quest_challenge => challenge level of the quest - value must be \"none\", \"very easy\", \"easy\", \"medium\", \"hard\", or \"deadly\"
         ```
         ''')
-    elif (command == 'view_quest' or command == 'vq'):
+    elif (command == 'view_quest'):
         await ctx.send('''
         ```
         view_quest quest_title
@@ -205,7 +206,7 @@ async def help(ctx, command=None):
         quest_title is the title of the quest you want to view
         ```
         ''')
-    elif (command == 'quest_list' or command == 'ql'):
+    elif (command == 'quest_list'):
         await ctx.send('''
         ```
         quest_list
@@ -213,7 +214,7 @@ async def help(ctx, command=None):
         This list the titles of all quest you have created, sorted by in-progress, complete, and failed.
         ```
         ''')
-    elif (command == 'delete_quest' or command == 'dq'):
+    elif (command == 'delete_quest'):
         await ctx.send('''
         ```
         delete_quest quest_title
@@ -222,7 +223,7 @@ async def help(ctx, command=None):
         quest_title is the title of the quest you want to delete
         ```
         ''')
-    elif (command == 'quest_status' or command == 'qs'):
+    elif (command == 'quest_status'):
         await ctx.send('''
         ```
         quest_status quest_title status 
@@ -262,7 +263,7 @@ async def prefixerror(ctx, error):
 #   Quest Commands                                                                                                     #
 ########################################################################################################################
 # create quest
-@client.command(aliases=['cq'])
+@slash.slash(name='create_quest', description='This will allow you to create a quest given certain information')
 @commands.has_guild_permissions(administrator=True)
 async def create_quest(ctx, title, desc, author_name, author_image, reward_type, quest_accepted_date, quest_image, quest_challenge):
     db = sqlite3.connect('main.sqlite')
@@ -321,7 +322,7 @@ async def cqerror(ctx, error):
 
 
 #edits a quest
-@client.command(aliases=['eq'])
+@slash.slash(name='edit_quest', description='This will allow you to edit a quest given its name, field to change, and value to change.')
 @commands.has_guild_permissions(administrator=True)
 async def edit_quest(ctx, quest_title, field_to_change, value):
     db = sqlite3.connect('main.sqlite')
@@ -385,7 +386,7 @@ async def eqerror(ctx, error):
         await ctx.send('An error has occurred!')
 
 # view a quest
-@client.command(aliases=['vq'])
+@slash.slash(name='view_quest', description='This will allow you to view a quest given a title.')
 async def view_quest(ctx, quest_title):
     db = sqlite3.connect('main.sqlite')
     cursor = db.cursor()
@@ -447,7 +448,7 @@ async def vqerror(ctx, error):
     else:
         await ctx.send('An error has occurred!')
 
-@client.command(aliases=['ql'])
+@slash.slash(name='quest_list', description='This will list all of the quest by their completion status.')
 async def quest_list(ctx):
     db = sqlite3.connect('main.sqlite')
     cursor = db.cursor()
@@ -481,7 +482,7 @@ async def quest_list(ctx):
     cursor.close()
     db.close()
 
-@client.command(aliases=['dq'])
+@slash.slash(name='delete_quest', description='This will delete a quest given a name.')
 @commands.has_guild_permissions(administrator=True)
 async def delete_quest(ctx, quest_title):
     db = sqlite3.connect('main.sqlite')
@@ -538,7 +539,7 @@ async def qserror(ctx, error):
     else:
         await ctx.send('An error has occurred!')
 
-@client.command(aliases=['qb'])
+@slash.slash(name='quest_builder', description='This will be a step-by-step guide for building a quest.')
 @commands.has_guild_permissions(administrator=True)
 async def quest_builder(ctx):
     db = sqlite3.connect('main.sqlite')
@@ -676,4 +677,4 @@ async def quest_builder(ctx):
 #   OTHER IMPORTANT CODE                                                                                               #
 ########################################################################################################################
 
-client.run('TOKEN')
+client.run('Token')
